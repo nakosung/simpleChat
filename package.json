@@ -1,0 +1,21 @@
+{
+    "name" : "lobby",
+    "version" : "0.0.1",
+    "private" : "true",
+    "scripts" : {
+        "start" : "coffee server"
+    },
+    "dependencies" : {
+        "express" : "*",
+        "socket.io" : "*",
+        "ejs" : "*"
+    },
+    "devDependencies" : {
+        "chai" : "*",
+        "mocha" : "*"
+    },
+    "engines" : {
+        "node" : "*",
+        "npm" : "*"
+    }
+}

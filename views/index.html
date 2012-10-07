@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html ng-app lang="ko">
+<head>
+    <meta charset="utf-8">
+    <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.1.1/css/bootstrap-combined.min.css" rel="stylesheet">
+    <title>Socket.IO testing</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.2/angular.min.js"></script>
+</head>
+<body ng-controller="ChatCtrl">
+<div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar-inner">
+        <div class="container">
+            <a class="class" href="#">Simple chat</a>
+            <form class="navbar-form pull-right">
+                <input class="span2" type="text" placeholder="nickname" ng-model="nickname">
+                <button type="submit" class="btn" ng-click="changeNickname()">Change!</button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="span9" ng-show="connected">
+        <div class="row">
+            <div class="span6">
+                <h2>chat messages</h2>
+                <p ng-repeat="x in logs">
+                    <span ng-show="x.sender" style="color:blue">{{x.sender}} : </span>{{x.text}}
+                    <small class="muted">{{x.time | date}}</small>
+                </p>
+                <form>
+                    <input ng-model="chat" class="input-large" placeholder="type something...">
+                    <button class="btn btn-info"
+                            ng-click="send(chat)"
+                            ng-disable='sending'>
+                        send
+                    </button>
+                </form>
+            </div>
+            <div class="span3">
+                <h2>users</h2>
+                <p ng-repeat="x in users">{{x}}</p>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.1.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script src="http://jashkenas.github.com/coffee-script/extras/coffee-script.js"></script>
+
+<script type="text/javascript">
+    function ChatCtrl($scope) {
+        $scope.nickname = 'hello'
+        $scope.users = []
+        $scope.logs = []
+        $scope.chat = ''
+        $scope.sending = false
+
+        $scope.send = function(chat) {
+            socket.emit('chat',chat,function(r){
+                $scope.chat = ''
+                $scope.sending = false
+                $scope.$apply();
+            })
+            $scope.sending = true;
+        }
+
+        $scope.changeNickname = function() {
+            socket.emit('nickname',$scope.nickname,function(err,name){
+                $scope.nickname = name
+                $scope.$apply();
+
+                if (err) {
+                    alert(err);
+                }
+            })
+        }
+
+        var socket = io.connect();
+        // socket status!
+        function status_handler(x) {
+            socket.on(x,function(){
+                $scope.status = x
+                $scope.$apply()
+            })
+        }
+        [
+            'connect','disconnect','reconnecting','reconnect',
+            'reconnect_failed','message','secret'
+        ].map(
+                function(x) {
+                    status_handler(x);
+                }
+        )
+        // end of socket status
+
+        socket.on('connect',function(){
+            socket.emit('newuser',$scope.nickname)
+            $scope.connected = true
+        })
+        socket.on('disconnect',function(){
+            $scope.connected = false
+        })
+        socket.on('chat',function(entry){
+            $scope.logs.push(entry);
+            $scope.$apply();
+        })
+        socket.on('addUser',function(data){
+            var idx = $scope.users.indexOf(data);
+            if (idx < 0) {
+                $scope.users.push(data);
+                $scope.$apply();
+            }
+        })
+        socket.on('removeUser',function(data){
+            var idx = $scope.users.indexOf(data);
+            if (idx < 0) return;
+
+            $scope.users.splice(idx,1);
+            $scope.$apply();
+        })
+        socket.on('renameUser',function(data){
+            var idx = $scope.users.indexOf(data.old);
+            if (idx < 0) return;
+
+            $scope.users[idx] = data.new;
+            $scope.$apply();
+        })
+    }
+
+</script>
+</body>
+</html>
